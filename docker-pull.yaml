@@ -1,0 +1,31 @@
+name: Download Docker Image to Artifact
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_name:
+        description: 'slimerl/slime:v0.2.4'
+        required: true
+        default: 'slimerl/slime:v0.2.4'
+
+jobs:
+  download-image:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Pull Docker Image
+        run: docker pull ${{ github.event.inputs.image_name }}
+
+      - name: Save Docker Image
+        run: |
+          # 改进文件名处理：同时替换冒号和斜杠，避免路径错误
+          CLEAN_NAME=$(echo "${{ github.event.inputs.image_name }}" | sed 's/[\/:]/_/g')
+          FILENAME="${CLEAN_NAME}.tar"
+          docker save -o $FILENAME ${{ github.event.inputs.image_name }}
+          echo "FILENAME=$FILENAME" >> $GITHUB_ENV
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: ${{ env.FILENAME }}
+          retention-days: 1
